@@ -1,0 +1,184 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>tracking.js</title>
+
+    <script src="js/tracking.js"></script>
+
+    <style>
+        #videoCanvas {
+            position: absolute;
+            z-index: 10;
+            cursor: crosshair;
+        }
+
+        #trackcolor {
+            background-color: rgba(255, 255, 255, 0);
+        }
+    </style>
+
+    <script src="js/videotracker.js"></script>
+</head>
+
+<body style="background-color: silver">
+
+    <h1>Video Tracker & 3D Visualizer</h1>
+    <div id="controls">
+        <div id="vidload">
+            <div id="message"></div>
+            <input type="file" accept="video/*" />
+        </div>
+        <div id="smplbtns" style="display:none">
+            <p>Select sample box size:</p>
+            <button id="smpl8" onclick="setbbox(8)">8x8</button>
+            <button id="smpl16" onclick="setbbox(16)">16x16</button>
+            <button id="smpl32" onclick="setbbox(32)">32x32</button>
+            <button id="smpl64" onclick="setbbox(64)">64x64</button>
+        </div>
+        <div id="cntrlbtns" style="display:none">
+            <button id="playButton" onclick="play()">PLAY</button>
+            <button id="stopButton" onclick="stop()">PAUSE</button>
+        </div>
+
+    </div>
+    <div id="trackcolor">
+        <p>tracking color</p>
+    </div>
+    <div id="dispContent">
+        <canvas id="videoCanvas"></canvas>
+        <video id="video" width="640" height="480" muted></video>
+    </div>
+
+    <a href="http://lusob.com/2012/02/tracking-a-football-match-with-html5-and-javascript">[+]</a>
+
+    <script>
+        var v = document.getElementById("video");
+        var c = document.getElementById("videoCanvas");
+        var vl = document.getElementById("vidload");
+        var cb = document.getElementById("cntrlbtns");
+        var sb = document.getElementById("smplbtns");
+        ctx = c.getContext("2d");
+
+        var x1 = y1 = x2 = y2 = mousex = mousey = width = height = R = G = B = A = 0;
+        var continueAnimating = false;
+
+        //mouseClick
+        c.addEventListener('click', function (e) {
+            var pos = getMousePos(c, e);
+            x1 = parseInt(pos.x) - width / 2;
+            y1 = parseInt(pos.y) - height / 2;
+            ctx.strokestyle = 'blue';
+            ctx.strokeRect(x1, y1, width, height);
+
+            //get bounding box image data
+            var dat = ctx.getImageData(x1, y1, width, height).data;
+            for (var i = 0; i < dat.length; i += 4) {
+                // A single pixel (R, G, B, A) will take 4 positions in the array:
+                R += dat[i];
+                G += dat[i + 1];
+                B += dat[i + 2];
+                A += dat[i + 3];
+            }
+            const pixelsPerChannel = dat.length / 4;
+            // The | operator is used here to perform an integer division:
+            R = R / pixelsPerChannel | 0;
+            G = G / pixelsPerChannel | 0;
+            B = B / pixelsPerChannel | 0;
+            // The alpha channel need to be in the [0, 1] range:
+            A = A / pixelsPerChannel / 255;
+            console.log(R, G, B, A);
+            document.getElementById("trackcolor").style.backgroundColor = 'rgb(' + R + ',' + G + ',' + B + ',' + A + ')';
+            // track();
+
+        })
+
+        onMoveFunc = function (x, y) {
+            console.log('Object detected at x=' + x1 + ', y=' + y1);
+        };
+        var videotracker = new VideoTracker(v);
+
+        //set sample box size function
+        function setbbox(bboxsize) {
+            width = height = bboxsize;
+            sb.style.display = "none";
+            cb.style.display = "block";
+        }
+
+        //get mouse position on canvas
+        function getMousePos(c, evt) {
+            var rect = c.getBoundingClientRect(), // abs. size of element
+                scaleX = c.width / rect.width,    // relationship bitmap vs. element for X
+                scaleY = c.height / rect.height;  // relationship bitmap vs. element for Y
+
+            return {
+                x: (evt.clientX - rect.left) * scaleX,   // scale mouse coordinates after they have
+                y: (evt.clientY - rect.top) * scaleY     // been adjusted to be relative to element
+            }
+        }
+
+        //video play/pause functions
+        function play() {
+            c.setAttribute("width", v.videoWidth);
+            c.setAttribute("height", v.videoHeight);
+            continueAnimating = true;
+            v.play();
+            videotracker.setOnMoveFunc(onMoveFunc);
+            videotracker.start();
+            animate();
+        }
+        function stop() {
+            v.pause();
+            continueAnimating = false;
+            tracking.stop;
+        }
+
+        //animate function
+        function animate() {
+            if (continueAnimating) {
+                ctx.drawImage(v, 0, 0, c.width, c.height);
+                // request another frame
+                requestAnimationFrame(animate);
+            } else {
+                return;
+            }
+
+        }
+
+        //load video function
+        (function localFileVideoPlayer() {
+            'use strict'
+            var URL = window.URL || window.webkitURL
+            var displayMessage = function (message, isError) {
+                var element = document.querySelector('#message')
+                element.innerHTML = message
+                element.className = isError ? 'error' : 'info'
+            }
+            var playSelectedFile = function (event) {
+                var file = this.files[0]
+                var type = file.type
+                var videoNode = document.querySelector('video')
+                var canPlay = videoNode.canPlayType(type)
+                if (canPlay === '') canPlay = 'no'
+                var message = 'Can play type "' + type + '": ' + canPlay
+                var isError = canPlay === 'no'
+                displayMessage(message, isError)
+
+                if (isError) {
+                    return
+                }
+
+                var fileURL = URL.createObjectURL(file)
+                videoNode.src = fileURL
+                sb.style.display = "block";
+                vl.style.display = "none";
+            }
+            var inputNode = document.querySelector('input')
+            inputNode.addEventListener('change', playSelectedFile, false)
+
+        })()
+    </script>
+</body>
+
+</html>

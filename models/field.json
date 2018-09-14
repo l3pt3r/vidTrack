@@ -1,0 +1,133 @@
+{
+	"metadata": {
+		"version": 4.5,
+		"type": "Object",
+		"generator": "Object3D.toJSON"
+	},
+	"geometries": [
+		{
+			"uuid": "9A894D92-11EF-49E0-A177-7D7FAA3FC8D2",
+			"type": "PlaneBufferGeometry",
+			"width": 100,
+			"height": 60,
+			"widthSegments": 1,
+			"heightSegments": 1
+		},
+		{
+			"uuid": "C6E403A0-A52A-4820-A52A-153E98D3E04A",
+			"type": "PlaneBufferGeometry",
+			"width": 100,
+			"height": 25,
+			"widthSegments": 1,
+			"heightSegments": 1
+		},
+		{
+			"uuid": "A22A6238-E39F-4EBC-9C40-BFAEB8A3A053",
+			"type": "PlaneBufferGeometry",
+			"width": 25,
+			"height": 60,
+			"widthSegments": 1,
+			"heightSegments": 1
+		}],
+	"materials": [
+		{
+			"uuid": "CB8B1C8A-2F26-442E-9E96-FC119D3D9233",
+			"type": "MeshStandardMaterial",
+			"color": 16777215,
+			"roughness": 0.5,
+			"metalness": 0.5,
+			"emissive": 16777215,
+			"emissiveMap": "32758362-6E10-4284-B15B-AA8737146DA6",
+			"side": 2,
+			"depthFunc": 3,
+			"depthTest": true,
+			"depthWrite": true
+		},
+		{
+			"uuid": "17D6FF11-7ADF-418D-8E10-D621BEAF0578",
+			"type": "MeshStandardMaterial",
+			"color": 16777215,
+			"roughness": 0.5,
+			"metalness": 0.5,
+			"emissive": 160,
+			"side": 2,
+			"depthFunc": 3,
+			"depthTest": true,
+			"depthWrite": true
+		},
+		{
+			"uuid": "B62EC564-F652-43E8-BA39-2E6CD5A30796",
+			"type": "MeshStandardMaterial",
+			"color": 16777215,
+			"roughness": 0.5,
+			"metalness": 0.5,
+			"emissive": 16777215,
+			"side": 2,
+			"depthFunc": 3,
+			"depthTest": true,
+			"depthWrite": true
+		}],
+	"textures": [
+		{
+			"uuid": "32758362-6E10-4284-B15B-AA8737146DA6",
+			"name": "",
+			"mapping": 300,
+			"repeat": [1,1],
+			"offset": [0,0],
+			"center": [0,0],
+			"rotation": 0,
+			"wrap": [1001,1001],
+			"format": 1023,
+			"minFilter": 1008,
+			"magFilter": 1006,
+			"anisotropy": 1,
+			"flipY": true,
+			"image": "DB5C7091-FF50-4F6A-8E7D-B5DDD260B8C8"
+		}],
+	"images": [
+		{
+			"uuid": "DB5C7091-FF50-4F6A-8E7D-B5DDD260B8C8",
+			"url": "../img/bg.png"
+		}],
+	"object": {
+		"uuid": "B83BE500-E6BE-425A-A646-403401276C55",
+		"type": "Mesh",
+		"name": "field",
+		"matrix": [1,0,0,0,0,0,-1,0,0,1,0,0,0,0,0,1],
+		"geometry": "9A894D92-11EF-49E0-A177-7D7FAA3FC8D2",
+		"material": "CB8B1C8A-2F26-442E-9E96-FC119D3D9233",
+		"children": [
+			{
+				"uuid": "AADBB987-5A0E-43B4-9F21-C03A5DDB53F2",
+				"type": "Mesh",
+				"name": "northStand",
+				"matrix": [1,0,0,0,0,0.866025,0.5,0,0,-0.5,0.866025,0,0,40,6.243924,1],
+				"geometry": "C6E403A0-A52A-4820-A52A-153E98D3E04A",
+				"material": "17D6FF11-7ADF-418D-8E10-D621BEAF0578"
+			},
+			{
+				"uuid": "EA2BDEFE-1E93-4121-933C-4FC8971B955E",
+				"type": "Mesh",
+				"name": "southStand",
+				"matrix": [1,0,0,0,0,0.866025,-0.5,0,0,0.5,0.866025,0,0,-40,6.243924,1],
+				"geometry": "C6E403A0-A52A-4820-A52A-153E98D3E04A",
+				"material": "17D6FF11-7ADF-418D-8E10-D621BEAF0578"
+			},
+			{
+				"uuid": "0A08D931-66A7-4141-8FA2-51099C9DB01D",
+				"type": "Mesh",
+				"name": "westStand",
+				"matrix": [0.866025,0,-0.5,0,0,1,0,0,0.5,0,0.866025,0,-60,0,6.24,1],
+				"geometry": "A22A6238-E39F-4EBC-9C40-BFAEB8A3A053",
+				"material": "B62EC564-F652-43E8-BA39-2E6CD5A30796"
+			},
+			{
+				"uuid": "C9449110-BD56-4399-9692-E835332C51FD",
+				"type": "Mesh",
+				"name": "eastStand",
+				"matrix": [0.866025,0,0.5,0,0,1,0,0,-0.5,0,0.866025,0,60,0,6.24,1],
+				"geometry": "A22A6238-E39F-4EBC-9C40-BFAEB8A3A053",
+				"material": "B62EC564-F652-43E8-BA39-2E6CD5A30796"
+			}]
+	}
+}

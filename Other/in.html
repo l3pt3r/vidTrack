@@ -1,0 +1,177 @@
+<html lang="en">
+
+<head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+    <style>
+        #videoCanvas {
+            background-color: black;
+            cursor: crosshair;
+        }
+    </style>
+</head>
+
+<body style="background-color: silver">
+
+    <h1>Video Tracker & 3D Visualizer</h1>
+    <div id="controls">
+        <div id="vidload">
+            <div id="message"></div>
+            <input type="file" accept="video/*"/>
+        </div>
+        <div id="cntrlbtns" style="display:none">
+            <button id="playButton" onclick="play()">PLAY</button>
+            <button id="stopButton" onclick="stop()">PAUSE</button>
+            <button id="sendButton" onclick="send()">SEND</button>
+        </div>
+    </div>
+    <div id="dispContent">
+        <canvas id="videoCanvas"></canvas>
+        <video id="video" muted hidden></video>
+    </div>
+
+    <p id="playerpoints">Players' Rectangles:</p>
+
+    <a href="http://lusob.com/2012/02/tracking-a-football-match-with-html5-and-javascript">[+]</a>
+
+    <script>
+        var v = document.getElementById("video");
+        var c = document.getElementById("videoCanvas");
+        var vl = document.getElementById("vidload");
+        var cb = document.getElementById("cntrlbtns");
+        ctx = c.getContext("2d");
+
+        var x1 = y1 = x2 = y2 = 0;
+        var mousex = mousey = 0;
+        var mousedown = false;
+        var rects = [];
+        var continueAnimating = false;
+        var activeRect = false;
+
+
+        document.addEventListener('keydown', this.check, false);
+
+        function getMousePos(c, evt) {
+            var rect = c.getBoundingClientRect(), // abs. size of element
+                scaleX = c.width / rect.width,    // relationship bitmap vs. element for X
+                scaleY = c.height / rect.height;  // relationship bitmap vs. element for Y
+
+            return {
+                x: (evt.clientX - rect.left) * scaleX,   // scale mouse coordinates after they have
+                y: (evt.clientY - rect.top) * scaleY     // been adjusted to be relative to element
+            }
+        }
+
+        function check(e) {
+            if (e.keyCode == 32 && activeRect == true) {
+                rects.push([[x1, y1], [x2, y2]]);
+                console.log(rects);
+                document.getElementById("playerpoints").innerHTML = "Players' Rectangles: " + rects;
+                activeRect = false;
+            }
+
+            if (e.keyCode == 13 && rects.length > 0) {
+                alert(rects.length + " Rectangles sent to Seerver !!");
+                rects = [];
+            }
+        }
+        //Mousedown
+        c.addEventListener('mousedown', function (e) {
+            var pos = getMousePos(c, e);
+            x1 = parseInt(pos.x);
+            y1 = parseInt(pos.y);
+            mousedown = true;
+        });
+
+        //Mouseup
+        c.addEventListener('mouseup', function (e) {
+            mousedown = false;
+            console.log("topLeft(" + x1 + ", " + y1 + "), bottomRight(" + x2 + ", " + y2 + ")");
+        });
+
+        //Mousemove
+        c.addEventListener('mousemove', function (e) {
+            var pos = getMousePos(c, e);
+            mousex = parseInt(pos.x);
+            mousey = parseInt(pos.y);
+        });
+
+        function play() {
+            c.setAttribute("width", v.videoWidth);
+            c.setAttribute("height", v.videoHeight);
+            continueAnimating = true;
+            v.play();
+            animate();
+        }
+        function stop() {
+            v.pause();
+            continueAnimating = false;
+        }
+
+        function send() {
+            $.post('execute.php', { video: v.src, trackers: rects });
+        }
+
+        var i = 0;
+        function animate() {
+            if (continueAnimating) {
+                i++;
+                console.log(i);
+            }
+            ctx.drawImage(v, 0, 0, c.width, c.height);
+            if (mousedown) {
+                ctx.beginPath();
+                var width = mousex - x1;
+                var height = mousey - y1;
+                ctx.rect(x1, y1, width, height);
+                x2 = mousex;
+                y2 = mousey;
+                ctx.strokeStyle = 'blue';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                activeRect = true;
+            }
+
+            // request another frame
+            requestAnimationFrame(animate);
+
+        }
+
+        //load video function
+        (function localFileVideoPlayer() {
+            'use strict'
+            var URL = window.URL || window.webkitURL
+            var displayMessage = function (message, isError) {
+                var element = document.querySelector('#message')
+                element.innerHTML = message
+                element.className = isError ? 'error' : 'info'
+            }
+            var playSelectedFile = function (event) {
+                var file = this.files[0]
+                var type = file.type
+                var videoNode = document.querySelector('video')
+                var canPlay = videoNode.canPlayType(type)
+                if (canPlay === '') canPlay = 'no'
+                var message = 'Can play type "' + type + '": ' + canPlay
+                var isError = canPlay === 'no'
+                displayMessage(message, isError)
+
+                if (isError) {
+                    return
+                }
+
+                var fileURL = URL.createObjectURL(file)
+                videoNode.src = fileURL;
+                cb.style.display = "block";
+                vl.style.display = "none";
+            }
+            var inputNode = document.querySelector('input')
+            inputNode.addEventListener('change', playSelectedFile, false)
+
+
+        })()
+
+    </script>
+</body>
+
+</html>

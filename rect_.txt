@@ -1,0 +1,5 @@
+box: 733 371 46 72
+frame: 141
+camHeight: 4500
+focal: 29
+duration: 441

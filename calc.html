@@ -1,0 +1,31 @@
+<html>
+
+<Body>
+    <canvas id="myCanvas" width="1000" height="600" style="background-image: url('img/bg.png')"></canvas>
+    <script>
+        var canvas = document.getElementById('myCanvas');
+        var context = canvas.getContext('2d');
+        var imageObj = new Image();
+        imageObj.src = 'img/bg.png';
+
+        imageObj.onload = function () {
+            context.drawImage(imageObj, 0, 0, 1000, 600);
+        };
+
+        function getMousePos(canvas, evt) {
+            var rect = canvas.getBoundingClientRect();
+            return {
+                x: evt.clientX - rect.left,
+                y: evt.clientY - rect.top
+            };
+        }
+
+        canvas.addEventListener('mousedown', function (evt) {
+            var mousePos = getMousePos(canvas, evt);
+            var message = 'Position: ' + (mousePos.x / 10) + ',' + (mousePos.y / 10);
+            console.log(message);
+        }, false);
+    </script>
+</Body>
+
+</html>

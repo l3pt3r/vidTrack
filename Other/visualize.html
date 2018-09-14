@@ -1,0 +1,121 @@
+<html>
+
+<head>
+    <title>My first three.js app</title>
+    <style>
+        body {
+            margin: 0;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%
+        }
+    </style>
+    <script src="js/three.js"></script>
+    <script src="js/OrbitControls.js"></script>
+</head>
+
+<body>
+    <script>
+        var scene = new THREE.Scene();
+        var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 100;
+
+        var renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+
+        var dotGeometry = new THREE.Geometry();
+
+        var dots = [];
+
+
+        for (i = 0; i < 100000; i++) {
+            var dotMaterial = new THREE.PointsMaterial({ size: 1, color: setRandomColor() });
+            dotGeometry.vertices.push(new THREE.Vector3(Math.floor((Math.random() * 100) + 1), Math.floor((Math.random() * 100) + 1), Math.floor((Math.random() * 100) + 1)));
+            var dot = new THREE.Points(dotGeometry, dotMaterial);
+            scene.add(dot);
+        }
+
+
+
+        function setRandomColor() {
+            var letters = '0123456789ABCDEF';
+            var color = '#';
+            for (var i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+
+        var animate = function () {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        };
+
+        animate();
+    </script>
+</body>
+
+</html>
+
+
+
+
+<!-- 
+var dotGeometry = new THREE.Geometry();
+var dotMaterial = new THREE.PointsMaterial({ size: 10, color: 'green' });
+
+// load a resource
+var loader = new THREE.FileLoader();
+var points3d, dots = [];
+
+//load a text file and output the result to the console
+loader.load(
+    // resource URL
+    'points.json',
+
+    // onLoad callback
+    function (data) {
+        points3d = data;
+        console.log(points3d);
+        alert("load OK !!!");
+        startAnimating(1);
+    },
+
+    // onProgress callback
+    function (xhr) {
+        console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+    },
+
+    // onError callback
+    function (err) {
+        console.error('An error happened');
+    }
+);
+
+camera.position.z = 1000;
+
+function startAnimating(fps) {
+    framerate = 1000 / fps;
+    then = Date.now();
+    startTime = then;
+    animate();
+}
+
+function animate() {
+
+    requestAnimationFrame(animate);
+    for (var i = 0; i < points3d.length; i++) {
+        dotGeometry.vertices.push(new THREE.Vector3(points3d[i].x, points3d[i].y, points3d[i].z));
+        var dot = new THREE.Points(dotGeometry, dotMaterial);
+        scene.add(dot);
+    }
+    renderer.render(scene, camera);
+
+}
+-->

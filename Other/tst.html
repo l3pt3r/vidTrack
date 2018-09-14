@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Upload your files</title>
+</head>
+
+<body>
+    <input type="file" action="fileupload" accept="video/*">
+    <button id="up" onclick="Upload()">Upload</button>
+
+    <script>
+
+        var http = require('http');
+        var formidable = require('formidable');
+        var fs = require('fs');
+
+        function Upload() {
+            http.createServer(function (req, res) {
+                if (req.url == '/fileupload') {
+                    var form = new formidable.IncomingForm();
+                    form.parse(req, function (err, fields, files) {
+                        var oldpath = files.filetoupload.path;
+                        // var newpath = 'videos/' + files.filetoupload.name;
+                        var newpath = 'videos/video.mp4';
+                        fs.rename(oldpath, newpath, function (err) {
+                            if (err) throw err;
+                            res.write('File uploaded and moved!');
+                            res.end();
+                        });
+                    });
+                }
+            }).listen(8080);
+        }
+    </script>
+</body>
+
+</html>

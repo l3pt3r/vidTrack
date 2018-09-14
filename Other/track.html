@@ -1,0 +1,351 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Track & 3D</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <style>
+        #videoCanvas {
+            /* position: absolute; */
+            z-index: 10;
+            cursor: crosshair;
+        }
+
+        .button {
+            padding: 2px 28px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            -webkit-transition-duration: 0.4s;
+            /* Safari */
+            transition-duration: 0.4s;
+            cursor: pointer;
+        }
+
+        #playButton {
+            background-color: gray;
+            color: white;
+            border: 2px solid #4CAF50;
+        }
+
+        #playButton:hover {
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: oldlace;
+        }
+
+        #stopButton {
+            background-color: gray;
+            color: black;
+            border: 2px solid red;
+        }
+
+        #stopButton:hover {
+            background-color: red;
+            color: white;
+        }
+
+        #reloadButton {
+            background-color: gray;
+            color: black;
+            border: 2px solid orange;
+        }
+
+        #reloadButton:hover {
+            background-color: orange;
+            color: black;
+        }
+
+        #downButton {
+            background-color: gray;
+            color: white;
+            border: 2px solid blue;
+        }
+
+        #downButton:hover {
+            background-color: blue;
+            color: white;
+        }
+    </style>
+
+    <script src="js/three.js"></script>
+</head>
+
+<body style="background-color: silver">
+
+    <h1>Video Tracker & 3D Visualizer</h1>
+
+    <div id="controls" style="background-color: gray">
+        <div id="vidload">
+            <div id="message"></div>
+            <input type="file" accept="video/*" />
+        </div>
+        <div id="cntrlbtns" style="display:none">
+            <button class="button" id="playButton" onclick="play()">
+                <i class="fa fa-play" style="color:white"></i> /
+                <i class="fa fa-eye" style="color:white"></i>
+            </button>
+            <button class="button" id="stopButton" onclick="stop()">
+                <i class="fa fa-pause" style="color:white"></i>
+            </button>
+            <button class="button" id="reloadButton" onclick="window.location.reload()">
+                <i class="fa fa-refresh" style="color:white"></i>
+            </button>
+            <button class="button" id="downButton" style="display:none" onclick="downloadJSON()">
+                <i class="fa fa-download" style="color:white"></i>
+            </button>
+        </div>
+    </div>
+
+    <div id="dispContent">
+        <video id="video" muted></video>
+        <canvas id="videoCanvas"></canvas>
+        <canvas id="videoCanvas2"></canvas>
+    </div>
+
+    <a href="http://lusob.com/2012/02/tracking-a-football-match-with-html5-and-javascript">[+]</a>
+
+    <script>
+        var v = document.getElementById("video");
+        var c = document.getElementById("videoCanvas");
+        var c2 = document.getElementById("videoCanvas2");
+        var vl = document.getElementById("vidload");
+        var cb = document.getElementById("cntrlbtns");
+        ctx = c.getContext("2d");
+        ctx2 = c2.getContext("2d");
+
+        //check if video ended
+        v.addEventListener('ended', myHandler, false);
+        function myHandler(e) {
+            continueAnimating = false;
+            document.getElementById("downButton").style.display = "inline-block";
+        }
+
+        var x1 = y1 = x2 = y2 = mousex = mousey = R = G = B = A = 0;
+        var width = height = 32;
+        var continueAnimating = false;
+        var f = 0.029; //focal length
+        var k = 0.1405 * f / 0.3; // calibrate according to A4 page dimensions
+        var ppm; //pixels per meter
+        var points3d = { "frames": [] };
+
+        var curf, subf, cnt = prvf = 0;
+
+        //pointObject constructor to call for each point created
+        function pointObject(x, y, z, color) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            this.color = color;
+        }
+
+        //get mouse position on canvas
+        function getMousePos(c, evt) {
+            var rect = c.getBoundingClientRect(), // abs. size of element
+                scaleX = c.width / rect.width,    // relationship bitmap vs. element for X
+                scaleY = c.height / rect.height;  // relationship bitmap vs. element for Y
+
+            return {
+                x: (evt.clientX - rect.left) * scaleX,   // scale mouse coordinates after they have
+                y: (evt.clientY - rect.top) * scaleY     // been adjusted to be relative to element
+            }
+        }
+
+        c2.addEventListener('click', function (e) {
+            var pos = getMousePos(c2, e);
+            x1 = parseInt(pos.x) - width / 2;
+            y1 = parseInt(pos.y) - height / 2;
+            ctx2.strokestyle = 'blue';
+            ctx.strokeRect(x1, y1, width, height);
+            ctx2.strokeRect(x1, y1, width, height);
+
+            //get bounding box image data
+            var dat = ctx.getImageData(x1, y1, width, height).data;
+            var dat2 = ctx.getImageData(x1, y1, width, height).data;
+            // findEdges(dat, dat2);
+
+        });
+
+        function findEdges(area, area2) {
+            for (var i = 0; i < area.length; i += 4) {
+                area.data[i] = Math.abs(curf.data[i] - prvf.data[i]); //Red color difference
+                area.data[i + 1] = Math.abs(curf.data[i + 1] - prvf.data[i + 1]); //Green color difference
+                area.data[i + 2] = Math.abs(curf.data[i + 2] - prvf.data[i + 2]); //Blue color difference
+                area.data[i + 3] = Math.abs(curf.data[i + 3]); //Alpha color value
+
+                //if pixel has color over 50,50,50 do the transformation
+                if (subf.data[i] > 50 && subf.data[i + 1] > 50 && subf.data[i + 2] > 50) {
+                    //pass color data into variable
+                    var color = new Object();
+                    color.r = curf.data[i];
+                    color.g = curf.data[i + 1];
+                    color.b = curf.data[i + 2];
+
+                    subf.data[i] = 255;
+                    subf.data[i + 1] = 255;
+                    subf.data[i + 2] = 255;
+                }
+            }
+        }
+
+        // track/stop buttons functions
+        function play() {
+            //set canvas size same as video
+            c.setAttribute("width", v.videoWidth);
+            c.setAttribute("height", v.videoHeight);
+            c2.setAttribute("width", v.videoWidth);
+            c2.setAttribute("height", v.videoHeight);
+
+            continueAnimating = true; //"give animation permission"
+            ppm = v.videoWidth / k; //calculate pixels per meter variable tor 3D position transformation
+
+            document.getElementById("downButton").style.display = "none";
+
+            //play video and call animate function for the rest work
+            v.play();
+            animate();
+        }
+        function stop() {
+            v.pause(); //pause video
+            continueAnimating = false; //"cancel animation permission"
+            document.getElementById("downButton").style.display = "inline-block";
+        }
+
+        function downloadJSON() {
+            //turn Object to JSON and download it
+            var myJSON = JSON.stringify(points3d, undefined, 2);
+            download(myJSON, 'points.json', 'application/json');
+        }
+
+        //download JSON function
+        function download(content, fileName, contentType) {
+            var a = document.createElement("a");
+            var file = new Blob([content], { type: contentType });
+            a.href = URL.createObjectURL(file);
+            a.download = fileName;
+            a.click();
+        }
+
+        function frameSubtract() {
+
+            //if it's the first frame (empty previous) skip the subtraction
+            if (prvf != 0) {
+
+                //sample each 2 frames
+                if (cnt % 2 == 0) {
+
+                    var frame = { "points": [] }; //frame Object-array for the frame points
+
+                    //scan frame each 16 pixels
+                    for (var i = 0; i < curf.data.length; i += 4) {
+                        subf.data[i] = Math.abs(curf.data[i] - prvf.data[i]); //Red color difference
+                        subf.data[i + 1] = Math.abs(curf.data[i + 1] - prvf.data[i + 1]); //Green color difference
+                        subf.data[i + 2] = Math.abs(curf.data[i + 2] - prvf.data[i + 2]); //Blue color difference
+                        subf.data[i + 3] = Math.abs(curf.data[i + 3]); //Alpha color value
+
+                        //if pixel has color over 50,50,50 do the transformation
+                        if (subf.data[i] > 50 && subf.data[i + 1] > 50 && subf.data[i + 2] > 50) {
+                            //pass color data into variable
+                            var color = new Object();
+                            color.r = curf.data[i];
+                            color.g = curf.data[i + 1];
+                            color.b = curf.data[i + 2];
+
+                            subf.data[i] = 255;
+                            subf.data[i + 1] = 255;
+                            subf.data[i + 2] = 255;
+                            //calculate x,y position on display element(canvas)
+                            var x = parseInt(i / subf.width);
+                            var y = i - x * subf.width;
+
+                            turn3D(i, x, y, color, frame); //turn x,y to 3D position
+                        }
+                    }
+                    //push only the frames that have difference points in the points3d object
+                    if (frame.points.length > 0) {
+                        points3d.frames.push(frame);
+                    }
+
+                    ctx2.putImageData(subf, 0, 0); //draw the track sample points on canvas
+                }
+            }
+            cnt++; //frame counter +1
+            prvf = curf; //set current frame to previous for the next scan
+            requestAnimationFrame(animate); //request next frame
+        }
+
+        function turn3D(i, x, y, color, frame) {
+            var U = x / ppm;
+            var V = y / ppm;
+
+            var h = parseInt((i / 4) / v.videoWidth);
+            //calculate 3D world x,y,z (meters)
+            var y3d = ((1.5 - (8 / h)) * ppm) * 0.001;
+            var z3d = Math.abs(y3d * f / V);
+            var x3d = U * Math.abs(z3d) / f;
+
+            // create the point object and push it in points array of frame object
+            var point = new pointObject(x3d, y3d, z3d, color);
+            frame.points.push(point);
+
+        }
+
+        //load video function
+        (function localFileVideoPlayer() {
+            'use strict'
+            var URL = window.URL || window.webkitURL
+            var displayMessage = function (message, isError) {
+                var element = document.querySelector('#message')
+                element.innerHTML = message
+                element.className = isError ? 'error' : 'info'
+            }
+            var playSelectedFile = function (event) {
+                var file = this.files[0]
+                var type = file.type
+                var videoNode = document.querySelector('video')
+                var canPlay = videoNode.canPlayType(type)
+                if (canPlay === '') canPlay = 'no'
+                var message = 'Can play type "' + type + '": ' + canPlay
+                var isError = canPlay === 'no'
+                displayMessage(message, isError)
+
+                if (isError) {
+                    return
+                }
+
+                var fileURL = URL.createObjectURL(file)
+                videoNode.src = fileURL
+                cb.style.display = "block";
+                vl.style.display = "none";
+            }
+            var inputNode = document.querySelector('input')
+            inputNode.addEventListener('change', playSelectedFile, false)
+
+        })()
+
+
+        //animate function
+        function animate() {
+            //if you are allowed to animate continue else print object and stop function              
+            if (continueAnimating) {
+                ctx.drawImage(v, 0, 0, c.width, c.height); //draw video frame on canvas
+
+                //pass data in frames variables
+                curf = ctx.getImageData(0, 0, c.width, c.height);
+                subf = ctx.getImageData(0, 0, c.width, c.height);
+
+                frameSubtract(); //subtraction function
+            } else {
+                console.log(points3d);
+                return;
+            }
+        }
+    </script>
+</body>
+
+</html>

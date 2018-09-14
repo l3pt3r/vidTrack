@@ -1,0 +1,121 @@
+
+#videoCanvas {
+    cursor: crosshair;   
+}
+
+#overlay {
+    position: fixed;
+    display: none;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 2;
+    cursor: pointer;
+}
+
+#text {
+    position: absolute;
+    top: 65%;
+    left: 50%;
+    font-size: 50px;
+    color: white;
+    transform: translate(-50%, -50%);
+    -ms-transform: translate(-50%, -50%);
+}
+
+.loader {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 1;
+    width: 150px;
+    height: 150px;
+    margin: -75px 0 0 -75px;
+    border: 30px solid #f3f3f3;
+    border-radius: 50%;
+    border-top: 30px solid #800020;
+    border-bottom: 30px solid #800020;
+    width: 120px;
+    height: 120px;
+    -webkit-animation: spin 2s linear infinite;
+    animation: spin 2s linear infinite;
+}
+
+@-webkit-keyframes spin {
+    0% {
+        -webkit-transform: rotate(0deg);
+    }
+    100% {
+        -webkit-transform: rotate(360deg);
+    }
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.button {
+    padding: 2px 28px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    -webkit-transition-duration: 0.4s;
+    /* Safari */
+    transition-duration: 0.4s;
+    cursor: pointer;
+}
+
+#playButton {
+    color: black;
+    border: 2px solid #4CAF50;
+    font-size:24px
+}
+
+#playButton:hover {
+    background-color: #4CAF50;
+    color: white;
+}
+
+#stopButton {
+    color: black;
+    border: 2px solid red;
+    font-size:24px
+}
+
+#stopButton:hover {
+    background-color: red;
+    color: white;
+}
+
+#sendButton {
+    color: black;
+    border: 2px solid blue;
+    font-size:24px
+}
+
+#sendButton:hover {
+    background-color: blue;
+    color: white;
+}
+
+#reloadButton {
+    color: black;
+    border: 2px solid orange;
+    font-size:24px
+}
+
+#reloadButton:hover {
+    background-color: orange;
+    color: black;
+}

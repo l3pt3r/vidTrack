@@ -1,0 +1,248 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>tracking.js - color with video</title>
+    <!-- <link rel="stylesheet" href="assets/demo.css"> -->
+
+    <script src="js/tracking-min.js"></script>
+    <script src="js/dat.gui.min.js"></script>
+    <script src="js/stats.min.js"></script>
+    <script src="js/color_camera_gui.js"></script>
+
+    <style>
+        .demo-container {
+            background-color: black;
+        }
+
+        video,
+        canvas {
+            position: absolute;
+        }
+
+    </style>
+</head>
+
+<body>
+    <div class="demo-title">
+        <p><a href="http://trackingjs.com" target="_parent">tracking.js</a> － detect certain colors in a video</p>
+    </div>
+
+    <div class="demo-frame">
+        <div class="demo-container">
+            <div id="rectangle"></div>
+            <video id="video" width="800" height="530" src="videos/olypao.mp4" preload autoplay loop muted controls>
+        </video>
+            <canvas id="canvas" width="800" height="500" onmousedown="setPos(event)"></canvas>
+        </div>
+    </div>
+
+    <script>
+        var cx;
+        var cy;
+        var tracker;
+        var canvas = document.getElementById('canvas');
+        var context = canvas.getContext('2d');
+
+        function setPos(event) {
+
+            var rect = canvas.getBoundingClientRect(), // abs. size of element
+                scaleX = canvas.width / rect.width, // relationship bitmap vs. element for X
+                scaleY = canvas.height / rect.height; // relationship bitmap vs. element for Y
+            height = "32";
+            width = "32";
+            R = 0;
+            G = 0;
+            B = 0;
+            A = 0;
+
+            cx = (event.clientX - rect.left) * scaleX; // scale mouse coordinates after they have
+            cy = (event.clientY - rect.top) * scaleY; // been adjusted to be relative to element
+            
+            x1 = parseInt(cx) - width / 2;
+            y1 = parseInt(cy) - height / 2;
+            context.strokeStyle = 'blue';
+            context.strokeRect(x1, y1, width, height);
+
+            //get bounding box image data
+            var dat = context.getImageData(x1, y1, width, height).data;
+            for (var i = 0; i < dat.length; i += 4) {
+                // A single pixel (R, G, B, A) will take 4 positions in the array:
+                R += dat[i];
+                G += dat[i + 1];
+                B += dat[i + 2];
+                A += dat[i + 3];
+            }
+            const pixelsPerChannel = dat.length / 4;
+            // The | operator is used here to perform an integer division:
+            R = R / pixelsPerChannel | 0;
+            G = G / pixelsPerChannel | 0;
+            B = B / pixelsPerChannel | 0;
+            // The alpha channel need to be in the [0, 1] range:
+            A = A / pixelsPerChannel / 255;
+            console.log(R, G, B, A);
+            
+            loadTracker(R, G, B);
+
+        }
+
+        function loadTracker(fr, fg, fb) {
+
+            tracking.ColorTracker.registerColor('custom', function(r, g, b) {
+                var dx = r - fr;
+                var dy = g - fg;
+                var dz = b - fb;
+
+                if ((b - g) >= 100 && (r - g) >= 60) {
+                    return true;
+                }
+                return dx * dx + dy * dy + dz * dz < 3500;
+            });
+
+            var tracker = new tracking.ColorTracker(['custom']);
+            tracker.setMinDimension(1);
+
+            tracking.track('#video', tracker);
+
+            tracker.on('track', function(event) {
+                data = [];
+                points = [];
+
+                context.clearRect(0, 0, canvas.width, canvas.height);
+
+                event.data.forEach(function(rect) {
+
+                    height = 32;
+                    width = 32;
+                    frect = [];
+                    frect.x = cx;
+                    frect.y = cy;
+                    frect.height = height;
+                    frect.width = width;
+
+                    if (rectOverlap(frect, rect)) {
+
+                        data.push(rect);
+                        points.push({
+                            'x': rect.x,
+                            'y': rect.y
+                        });
+
+                    }
+
+                });
+
+                height = 32;
+                width = 32;
+                frect = [];
+                frect.x = cx;
+                frect.y = cy;
+                frect.height = height;
+                frect.width = width;
+
+                rect = mergeAll(data)[0];
+                
+                rect.height = 32;
+                rect.width = 32;
+
+                context.strokeStyle = rect.color;
+                context.strokeRect(rect.x, rect.y, rect.width, rect.height);
+                context.font = '11px Helvetica';
+                context.fillStyle = "#fff";
+                context.fillText('x: ' + rect.x + 'px', rect.x + rect.width, rect.y);
+                context.fillText('y: ' + rect.y + 'px', rect.x + rect.height, rect.y);
+                cx = rect.x;
+                cy = rect.y;
+
+
+            });
+
+            //initGUIControllers(tracker);
+        }
+
+        function increaseY(width, bottomEdge, Max) {
+            return (bottomEdge + width < Max);
+        }
+
+        function valueInRange(value, min, max) {
+
+            return (value <= max) && (value >= min);
+
+        }
+
+        function rectOverlap(A, B) {
+            var xOverlap = valueInRange(A.x, B.x, B.x + B.width) ||
+                valueInRange(B.x, A.x, A.x + A.width);
+
+            var yOverlap = valueInRange(A.y, B.y, B.y + B.height) ||
+                valueInRange(B.y, A.y, A.y + A.height);
+
+            return xOverlap && yOverlap;
+        }
+
+        function d(point) {
+            return Math.pow(point.x, 2) + Math.pow(point.y, 2);
+        }
+
+        function mergeAll(array) {
+            let newArr, didMerge, i;
+            do {
+                newArr = [];
+                didMerge = false;
+                i = 0;
+                while (i < array.length) {
+                    const curr = array[i];
+                    const next = array[i + 1];
+                    if (intersects(curr, next)) {
+                        newArr.push(merge(curr, next));
+                        i++;
+                        didMerge = true;
+                    } else {
+                        newArr.push(curr);
+                    }
+                    i++;
+                }
+                if (newArr.length > 0) {
+                    array = newArr;
+                }
+            } while (didMerge);
+            return array;
+        }
+
+        function sort(array) {
+            array.sort((r1, r2) => {
+                if (r1.x === r2.x) {
+                    return r1.y - r2.y;
+                }
+                return r1.x - r2.x;
+            });
+        }
+
+        function intersects(r1, r2) {
+            if (!r2) {
+                return false;
+            }
+            return !(r2.x > r1.x + r1.w ||
+                r2.x + r2.w < r1.x ||
+                r2.y > r1.y + r1.h ||
+                r2.y + r2.h < r1.y
+            );
+        }
+
+        function merge(r1, r2) {
+            const w = r1.w > r2.w ? r1.w : r2.w + (r2.x - r1.x);
+            const h = r1.h > r2.h ? r1.h : r2.h + (r2.y - r1.y);
+            return {
+                x: Math.min(r1.x, r2.x),
+                y: Math.min(r1.y, r2.y),
+                w: w,
+                h: h
+            }
+        }
+
+    </script>
+
+</body>
+
+</html>
